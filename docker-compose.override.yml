@@ -1,0 +1,9 @@
+services:
+  rag_api:
+    container_name: librechat-rag_api
+    image: ghcr.io/danny-avila/librechat-rag-api-dev:latest
+    volumes:
+      - ./config.py:/app/config.py
+      - ./docker-entrypoint.sh:/docker-entrypoint.sh
+    entrypoint: ["/docker-entrypoint.sh"]
+    command: python /app/main.py
