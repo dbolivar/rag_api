@@ -1,11 +1,12 @@
 # app/config.py
-import os
-import json
-import boto3
-import logging
-import urllib.parse
-from enum import Enum
 from datetime import datetime
+from enum import Enum
+import json
+import logging
+import os
+import urllib.parse
+
+import boto3
 from dotenv import find_dotenv, load_dotenv
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -27,11 +28,10 @@ class EmbeddingsProvider(Enum):
     OLLAMA = "ollama"
     BEDROCK = "bedrock"
     GOOGLE_VERTEXAI = "vertexai"
+    VOYAGEAI = "voyageai"
 
 
-def get_env_variable(
-    var_name: str, default_value: str = None, required: bool = False
-) -> str:
+def get_env_variable(var_name: str, default_value: str = None, required: bool = False) -> str:
     value = os.getenv(var_name)
     if value is None:
         if default_value is None and required:
@@ -47,22 +47,16 @@ RAG_UPLOAD_DIR = get_env_variable("RAG_UPLOAD_DIR", "./uploads/")
 if not os.path.exists(RAG_UPLOAD_DIR):
     os.makedirs(RAG_UPLOAD_DIR, exist_ok=True)
 
-VECTOR_DB_TYPE = VectorDBType(
-    get_env_variable("VECTOR_DB_TYPE", VectorDBType.PGVECTOR.value)
-)
+VECTOR_DB_TYPE = VectorDBType(get_env_variable("VECTOR_DB_TYPE", VectorDBType.PGVECTOR.value))
 POSTGRES_DB = get_env_variable("POSTGRES_DB", "mydatabase")
 POSTGRES_USER = get_env_variable("POSTGRES_USER", "myuser")
 POSTGRES_PASSWORD = get_env_variable("POSTGRES_PASSWORD", "mypassword")
 DB_HOST = get_env_variable("DB_HOST", "db")
 DB_PORT = get_env_variable("DB_PORT", "5432")
 COLLECTION_NAME = get_env_variable("COLLECTION_NAME", "testcollection")
-ATLAS_MONGO_DB_URI = get_env_variable(
-    "ATLAS_MONGO_DB_URI", "mongodb://127.0.0.1:27018/LibreChat"
-)
+ATLAS_MONGO_DB_URI = get_env_variable("ATLAS_MONGO_DB_URI", "mongodb://127.0.0.1:27018/LibreChat")
 ATLAS_SEARCH_INDEX = get_env_variable("ATLAS_SEARCH_INDEX", "vector_index")
-MONGO_VECTOR_COLLECTION = get_env_variable(
-    "MONGO_VECTOR_COLLECTION", None
-)  # Deprecated, backwards compatability
+MONGO_VECTOR_COLLECTION = get_env_variable("MONGO_VECTOR_COLLECTION", None)  # Deprecated, backwards compatability
 CHUNK_SIZE = int(get_env_variable("CHUNK_SIZE", "1500"))
 CHUNK_OVERLAP = int(get_env_variable("CHUNK_OVERLAP", "100"))
 
@@ -128,9 +122,7 @@ if console_json:
 
     formatter = JsonFormatter()
 else:
-    formatter = logging.Formatter(
-        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
 handler = logging.StreamHandler()  # or logging.FileHandler("app.log")
 handler.setFormatter(formatter)
@@ -167,18 +159,15 @@ RAG_OPENAI_BASEURL = get_env_variable("RAG_OPENAI_BASEURL", None)
 RAG_OPENAI_PROXY = get_env_variable("RAG_OPENAI_PROXY", None)
 AZURE_OPENAI_API_KEY = get_env_variable("AZURE_OPENAI_API_KEY", "")
 RAG_AZURE_OPENAI_API_VERSION = get_env_variable("RAG_AZURE_OPENAI_API_VERSION", None)
-RAG_AZURE_OPENAI_API_KEY = get_env_variable(
-    "RAG_AZURE_OPENAI_API_KEY", AZURE_OPENAI_API_KEY
-)
+RAG_AZURE_OPENAI_API_KEY = get_env_variable("RAG_AZURE_OPENAI_API_KEY", AZURE_OPENAI_API_KEY)
 AZURE_OPENAI_ENDPOINT = get_env_variable("AZURE_OPENAI_ENDPOINT", "")
-RAG_AZURE_OPENAI_ENDPOINT = get_env_variable(
-    "RAG_AZURE_OPENAI_ENDPOINT", AZURE_OPENAI_ENDPOINT
-).rstrip("/")
+RAG_AZURE_OPENAI_ENDPOINT = get_env_variable("RAG_AZURE_OPENAI_ENDPOINT", AZURE_OPENAI_ENDPOINT).rstrip("/")
 HF_TOKEN = get_env_variable("HF_TOKEN", "")
 OLLAMA_BASE_URL = get_env_variable("OLLAMA_BASE_URL", "http://ollama:11434")
 AWS_ACCESS_KEY_ID = get_env_variable("AWS_ACCESS_KEY_ID", "")
 AWS_SECRET_ACCESS_KEY = get_env_variable("AWS_SECRET_ACCESS_KEY", "")
 GOOGLE_APPLICATION_CREDENTIALS = get_env_variable("GOOGLE_APPLICATION_CREDENTIALS", "")
+VOYAGEAI_API_KEY = get_env_variable("VOYAGEAI_API_KEY", "")
 
 ## Embeddings
 
@@ -207,9 +196,7 @@ def init_embeddings(provider, model):
     elif provider == EmbeddingsProvider.HUGGINGFACE:
         from langchain_huggingface import HuggingFaceEmbeddings
 
-        return HuggingFaceEmbeddings(
-            model_name=model, encode_kwargs={"normalize_embeddings": True}
-        )
+        return HuggingFaceEmbeddings(model_name=model, encode_kwargs={"normalize_embeddings": True})
     elif provider == EmbeddingsProvider.HUGGINGFACETEI:
         from langchain_huggingface import HuggingFaceEndpointEmbeddings
 
@@ -235,13 +222,15 @@ def init_embeddings(provider, model):
             model_id=model,
             region_name=AWS_DEFAULT_REGION,
         )
+    elif provider == EmbeddingsProvider.VOYAGEAI:
+        from langchain_voyageai import VoyageAIEmbeddings
+
+        return VoyageAIEmbeddings(voyage_api_key=VOYAGEAI_API_KEY, model=model)
     else:
         raise ValueError(f"Unsupported embeddings provider: {provider}")
 
 
-EMBEDDINGS_PROVIDER = EmbeddingsProvider(
-    get_env_variable("EMBEDDINGS_PROVIDER", EmbeddingsProvider.OPENAI.value).lower()
-)
+EMBEDDINGS_PROVIDER = EmbeddingsProvider(get_env_variable("EMBEDDINGS_PROVIDER", EmbeddingsProvider.OPENAI.value).lower())
 
 if EMBEDDINGS_PROVIDER == EmbeddingsProvider.OPENAI:
     EMBEDDINGS_MODEL = get_env_variable("EMBEDDINGS_MODEL", "text-embedding-3-small")
@@ -252,22 +241,18 @@ elif EMBEDDINGS_PROVIDER == EmbeddingsProvider.AZURE:
     # 2048 is the default (and maximum) chunk size for Azure, but this often causes unexpected 429 errors
     EMBEDDINGS_CHUNK_SIZE = get_env_variable("EMBEDDINGS_CHUNK_SIZE", 200)
 elif EMBEDDINGS_PROVIDER == EmbeddingsProvider.HUGGINGFACE:
-    EMBEDDINGS_MODEL = get_env_variable(
-        "EMBEDDINGS_MODEL", "sentence-transformers/all-MiniLM-L6-v2"
-    )
+    EMBEDDINGS_MODEL = get_env_variable("EMBEDDINGS_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 elif EMBEDDINGS_PROVIDER == EmbeddingsProvider.HUGGINGFACETEI:
-    EMBEDDINGS_MODEL = get_env_variable(
-        "EMBEDDINGS_MODEL", "http://huggingfacetei:3000"
-    )
+    EMBEDDINGS_MODEL = get_env_variable("EMBEDDINGS_MODEL", "http://huggingfacetei:3000")
 elif EMBEDDINGS_PROVIDER == EmbeddingsProvider.GOOGLE_VERTEXAI:
     EMBEDDINGS_MODEL = get_env_variable("EMBEDDINGS_MODEL", "text-embedding-004")
 elif EMBEDDINGS_PROVIDER == EmbeddingsProvider.OLLAMA:
     EMBEDDINGS_MODEL = get_env_variable("EMBEDDINGS_MODEL", "nomic-embed-text")
 elif EMBEDDINGS_PROVIDER == EmbeddingsProvider.BEDROCK:
-    EMBEDDINGS_MODEL = get_env_variable(
-        "EMBEDDINGS_MODEL", "amazon.titan-embed-text-v1"
-    )
+    EMBEDDINGS_MODEL = get_env_variable("EMBEDDINGS_MODEL", "amazon.titan-embed-text-v1")
     AWS_DEFAULT_REGION = get_env_variable("AWS_DEFAULT_REGION", "us-east-1")
+elif EMBEDDINGS_PROVIDER == EmbeddingsProvider.VOYAGEAI:
+    EMBEDDINGS_MODEL = get_env_variable("EMBEDDINGS_MODEL", "voyage-3")
 else:
     raise ValueError(f"Unsupported embeddings provider: {EMBEDDINGS_PROVIDER}")
 
@@ -287,7 +272,7 @@ elif VECTOR_DB_TYPE == VectorDBType.ATLAS_MONGO:
     # Backward compatability check
     if MONGO_VECTOR_COLLECTION:
         logger.info(
-            f"DEPRECATED: Please remove env var MONGO_VECTOR_COLLECTION and instead use COLLECTION_NAME and ATLAS_SEARCH_INDEX. You can set both as same, but not neccessary. See README for more information."
+            "DEPRECATED: Please remove env var MONGO_VECTOR_COLLECTION and instead use COLLECTION_NAME and ATLAS_SEARCH_INDEX. You can set both as same, but not neccessary. See README for more information."
         )
         ATLAS_SEARCH_INDEX = MONGO_VECTOR_COLLECTION
         COLLECTION_NAME = MONGO_VECTOR_COLLECTION
